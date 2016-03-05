@@ -1,0 +1,25 @@
+body {
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+a {
+  text-decoration: none;
+}
+.container {
+  margin: 2em auto 1em auto;
+  padding-top: 30px;
+  width: 700px;
+}
+.header a {
+  font-size: 48px;
+  color: black;
+}
+.header small {
+  color: gray;
+}
+.footer {
+  font-size: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MySQL宽字节注入及相关知识点</title>
+
+  <link rel="stylesheet" href="/stylesheets/post.css">
+  <link rel="stylesheet" href="/stylesheets/default.css">
+</head>
+<body>
+  <div class="container">
+
+    <div class="post-title">
+  <h1>MySQL宽字节注入及相关知识点</h1>
+  <p>29 Oct 2015</p>
+</div>
+
+
+    <a href="/"><img src="/images/scribble2.png" alt=""></a>
+    <div class="post-content">
+      <h2 id="info">Info</h2>
+
+<p>这些天在利用sqli-labs来研究sql注入,发现了很多有趣的东西,今天就在这里记录一下宽字节注入以及相关知识点.</p>
+
+<h3 id="section">宽字节注入</h3>
+
+<p>人类有多种语言,然而计算机的语言只有0和1,所以编码就此诞生.宽字节注入的发生背景就是GBK编码.</p>
+
+<p>我们的场景很简单:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>mysql_query("SET NAMES 'gbk'");
+$id = isset($_GET['id']) ? addslashes($_GET['id']) : 1;
+$sql = "SELECT * FROM news WHERE tid='{$id}'";
+</code></pre>
+</div>
+
+<p>服务端设置连接字符集,将通过addslashes等过滤函数将输入提交到数据库,然而问题在于,过滤函数并不是按照连接字符集来过滤的,所以就导致了以下的现象:</p>
+
+<p>当用户提交<code class="highlighter-rouge">%df'</code>时,<code class="highlighter-rouge">'</code>因为在addslashes的黑名单内,所以会被过滤为<code class="highlighter-rouge">%df\'</code>,转成ascii码后变成<code class="highlighter-rouge">%df%5c%27</code>.
+当数据提交到数据库后,由于设置了GBK为连接字符集,当两个字符中前一个字符的ascii码值大于128时,该编码会把这两个字符视作一个汉字,所以<code class="highlighter-rouge">%df%5c</code>被当做一个汉字,从而使<code class="highlighter-rouge">'</code>逃逸.</p>
+
+<h3 id="section-1">修复</h3>
+
+<p>上面提到了,问题的关键在于过滤函数并没有考虑当前连接的字符集.所以要使用<code class="highlighter-rouge">mysql_real_escape_string()</code>,该函数会考虑当前连接的字符集.</p>
+
+<p>但是该函数是从<code class="highlighter-rouge">mysql-&gt;charset</code>这个对象属性中获取字符集,我们上面的<code class="highlighter-rouge">mysql_query("SET NAMES 'gbk'");</code>并不会达到这种效果,所以要将其改为<code class="highlighter-rouge">mysql_set_charset('gbk'),</code>该函数除了<code class="highlighter-rouge">SET NAME 'gbk'</code>(下面会提到)之外,还会将<code class="highlighter-rouge">mysql-&gt;charset</code>设置为GBK,从而供<code class="highlighter-rouge">mysql_real_escape_string()</code>使用.</p>
+
+<h3 id="mysql">MySQL字符集转换过程</h3>
+
+<p>既然说到字符集,就有必要了解一下其运作过程:</p>
+
+<ul>
+  <li>MySQL Server收到请求时将请求数据从character_set_client转换为character_set_connection</li>
+  <li>
+    <p>进行内部操作前将请求数据从character_set_connection转换为内部操作字符集,其确定方法如下：</p>
+
+    <ul>
+      <li>使用每个数据字段的CHARACTER SET设定值</li>
+      <li>若上述值不存在,则使用对应数据表的DEFAULT CHARACTERSET设定值(MySQL扩展,非SQL标准)</li>
+      <li>若上述值不存在,则使用对应数据库的DEFAULT CHARACTERSET设定值</li>
+      <li>若上述值不存在,则使用character_set_server设定值</li>
+    </ul>
+  </li>
+  <li>将操作结果从内部操作字符集转换为character_set_results</li>
+</ul>
+
+<p>我们所执行的<code class="highlighter-rouge">SET NAMES</code>的功能如下:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>SET NAMES sets the three session system variables character_set_client, character_set_connection, and character_set_results to the given character set. 
+</code></pre>
+</div>
+
+<h3 id="section-2">几点需要注意的问题</h3>
+
+<ul>
+  <li>URL encode的过程就是把部分url做为字符，按照某种编码方式（如：utf-8,gbk等）编码成二进制的字节码，然后每个字节用一个包含3个字符的字符串 “%xy” 表示，其中xy为该字节的两位十六进制表示形式</li>
+  <li><a href="http://blog.csdn.net/yanwushu/article/details/8088260">GET和POST的URL编码方式</a></li>
+  <li>POST的格式为<a href="https://en.wikipedia.org/wiki/Percent-encoding">application/x-www-form-urlencoded</a>,在HTML5中不编码的字符有字母,数字和<code class="highlighter-rouge">*-_.</code></li>
+  <li>chrome中GET只会对空格和单引号进行编码</li>
+</ul>
+
+
+    </div>
+
+    <div id="disqus_thread"></div>
+    <script>
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+
+    s.src = '//imp0wd3r.disqus.com/embed.js';
+
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+  </div>
+</body>
+</html>

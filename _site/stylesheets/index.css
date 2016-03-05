@@ -1,0 +1,29 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+ul {
+  list-style: none;
+}
+.pagination a {
+  color: black;
+  text-decoration: underline;
+}
+.post-container {
+  padding: 20px 0;
+}
+.post-container .post-list {
+  min-height: 400px;
+}
+.post-container .post-list span {
+  display: inline-block;
+  width: 90px;
+  color: gray;
+  font-size: 13px;
+}
+.post-container .post-list a {
+  color: black;
+}
+.post-container .post-list a:hover {
+  opacity: 0.8;
+}

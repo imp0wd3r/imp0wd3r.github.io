@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title }}</title>
+
+  <link rel="stylesheet" href="/stylesheets/post.css">
+  <link rel="stylesheet" href="/stylesheets/default.css">
+</head>
+<body>
+  <div class="container">
+
+    {% include post_header.html %}
+
+    <a href="/"><img src="/images/scribble2.png" alt=""></a>
+    <div class="post-content">
+      {{ content }}
+    </div>
+
+    <div id="disqus_thread"></div>
+    <script>
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+
+    s.src = '//imp0wd3r.disqus.com/embed.js';
+
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+  </div>
+</body>
+</html>

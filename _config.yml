@@ -1,0 +1,4 @@
+paginate: 20
+gems: [jekyll-paginate]
+paginate_path: "/page:num/"
+markdown: kramdown
