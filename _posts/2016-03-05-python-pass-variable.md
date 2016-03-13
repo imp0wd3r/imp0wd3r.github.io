@@ -7,16 +7,13 @@ title: Python 函数参数传递
 由于Python变量的特殊性，Python函数参数的传递并不是传值或者是传引用，而是一种特殊的方式，我们可以称之为: Call by sharing。
 
 ### Nametag
-在Python中，变量其实是内存中对象的一个“标签”，我们可以称之为nametag。它并不像C或者其他语言那样，在给变量赋值时把对象放在之前为变量开辟的存储空间中，而是为对象创建一个“标签”，并不改变对象的存储。这里有个很形象的[例子](http://python.net/~goodger/projects/pycon/2007/idiomatic/handout.html#other-languages-have-variables)。通过以下代码也可以说明这一特性:
+在Python中，变量其实是内存中对象的一个“标签”，我们可以称之为nametag。它并不像C或者其他语言那样在变量之间赋值时创建一个新的对象给新变量，而是让新变量也指向之前的对象，这里有个很形象的[例子](http://python.net/~goodger/projects/pycon/2007/idiomatic/handout.html#other-languages-have-variables)。我们也可以通过以下代码来说明：
 
 ```python
 a = 1
-b = 1
-print id(a) # 37151064
-print id(b) # 37151064
+b = a
+print a is b # True
 ```
-
-可以看出`a`和`b`虽然为两个不同的变量，但实际上都指向的内存中`1`这个对象。
 
 其实在CPython中，Python变量的实现为`PyObject*`,结合指针类型也就更容易理解“标签”的含义（Python对一些操作进行了重载，所以不要完全以指针的操作来看待变量操作）。
 
