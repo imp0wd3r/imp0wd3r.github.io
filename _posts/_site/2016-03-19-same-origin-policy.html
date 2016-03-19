@@ -1,0 +1,46 @@
+<h2 id="info">Info</h2>
+<p>对同源策略及其相关知识点的整理。</p>
+
+<h3 id="section">源</h3>
+<p>源的界定元素是协议、域名和端口号，如果两个页面的这三个元素相同，那么它们就是同源的。</p>
+
+<h3 id="section-1">同源策略</h3>
+<p>同源策略，Same-origin policy， SOP。该策略约束了一个源中所加载的文档和脚本对另一个源中的资源的访问。</p>
+
+<h3 id="section-2">约束</h3>
+<p>同源策略对资源间的访问进行了以下三类约束：</p>
+
+<ul>
+  <li>允许跨源写操作，包括链接、重定向和表单提交</li>
+  <li>允许跨源嵌入资源，包括如下几种嵌入方式：
+    <ul>
+      <li><code class="highlighter-rouge">&lt;script&gt;</code>，可以实现JSONP</li>
+      <li><code class="highlighter-rouge">&lt;link rel="stylesheet"&gt;</code></li>
+      <li><code class="highlighter-rouge">&lt;img&gt;</code></li>
+      <li><code class="highlighter-rouge">&lt;video&gt;</code>、<code class="highlighter-rouge">&lt;audio&gt;</code></li>
+      <li><code class="highlighter-rouge">&lt;object&gt;</code>、<code class="highlighter-rouge">&lt;embed&gt;</code>、<code class="highlighter-rouge">&lt;applet&gt;</code></li>
+      <li><code class="highlighter-rouge">@font-face</code></li>
+      <li><code class="highlighter-rouge">&lt;frame&gt;</code>、<code class="highlighter-rouge">&lt;iframe&gt;</code></li>
+    </ul>
+  </li>
+  <li>不允许跨源读操作，但是可以通过嵌入资源来读取</li>
+</ul>
+
+<h3 id="section-3">跨源访问</h3>
+<p>实际应用中的业务需求有时要满足跨源通信，以下是几种跨源方式：</p>
+
+<ul>
+  <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/domain"><code class="highlighter-rouge">document.domain</code></a>：这实际是一种源的改变，脚本可以设置该值为当前域的一个后缀，之后该值即变为源的判断依据，利用这种方式可以实现父域与子域间资源的访问。需要注意的是其值不能为.com等顶级域。</li>
+  <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage"><code class="highlighter-rouge">window.postMessage</code></a>： <a href="https://developer.mozilla.org/en/docs/Web/Security/Same-origin_policy#Window">JavaScript中窗口的句柄是可以跨源访问的</a>，只要发送端拥有某个窗口的JavaScript句柄，就可以通过这个机制向该窗口发送任意长度的文本信息。这套机制由发送端决定哪个页面能接受到发送的信息，在发送的过程中，也会为接受端提供发送者的身份信息以供认证，从而确保了传输的正确性。</li>
+  <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">Cross-Origin Resource Sharing（CORS）</a>：即跨源资源共享，这种机制让Web服务器支持访问控制，其基本思想是使用自定义的HTTP头部让浏览器与服务器进行沟通，从而决定请求是否成功。需要注意的是，不管请求是否成功，请求都成功发送到了服务器上。</li>
+  <li><a href="https://en.wikipedia.org/wiki/WebSocket">WebSocket</a>：WebSocket的目标是创建一个全双工的socket连接，客户端首先向服务端发送一个特殊的HTTP请求以发起连接，收到服务器响应之后，连接由HTTP升级为WebSocket从而开始通信。</li>
+</ul>
+
+<h3 id="section-4">参考文档</h3>
+
+<ul>
+  <li>https://developer.mozilla.org/en/docs/Web/Security/Same-origin_policy</li>
+  <li>《Web之困》</li>
+  <li>《Web前端黑客技术揭秘》</li>
+  <li>《JavaScript高级程序设计》</li>
+</ul>
