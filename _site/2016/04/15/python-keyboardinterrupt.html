@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Python并发编程中的KeyboardInterrupt</title>
+
+  <link rel="stylesheet" href="/stylesheets/post.css">
+  <link rel="stylesheet" href="/stylesheets/default.css">
+</head>
+<body>
+  <div class="container">
+
+    <div class="post-title">
+  <h1>Python并发编程中的KeyboardInterrupt</h1>
+  <p>15 Apr 2016</p>
+</div>
+
+
+    <a href="/"><img src="/images/scribble2.png" alt=""></a>
+    <div class="post-content">
+      <h2 id="info">Info</h2>
+<p>使用脚本程序时我们时常会用到<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>触发<code class="highlighter-rouge">KeyboardInterrupt</code>来进行退出，本文记录了在几种典型并发模型中实现此类退出的方式。</p>
+
+<h3 id="section">基础知识</h3>
+
+<ul>
+  <li>signal
+    <ul>
+      <li>信号是一种<strong>进程</strong>间的通讯机制，<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>实际上发出的是<code class="highlighter-rouge">SIGINT</code>信号，用于终止进程的运行。需要注意的是，线程并不是处理信号的单元。</li>
+    </ul>
+  </li>
+  <li>join
+    <ul>
+      <li><code class="highlighter-rouge">x.join()</code>：阻塞调用该语句的线程/进程，直到<code class="highlighter-rouge">x</code>执行结束。阻塞并不意味着不接收信号，只是直到阻塞结束再处理该信号。</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="multiprocessing">multiprocessing</h3>
+<p>由于Python的GIL，多进程承担了更多的并发任务。</p>
+
+<h4 id="x00-">0x00 缺陷方案</h4>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">'[-] main exit'</span>
+
+<span class="k">def</span> <span class="nf">handler</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">'[-] handler exit'</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>运行结果如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">main</span> <span class="nb">exit</span>
+</code></pre>
+</div>
+
+<p>根据运行结果来看，<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>发出的信号首先到达由子进程处理，待子进程处理完后父进程再处理，这是由于<code class="highlighter-rouge">p.join()</code>阻塞了父进程，使信号不能第一时间被处理。在子进程结束后，<code class="highlighter-rouge">p.join()</code>返回之前，主进程才处理接收到的信号。</p>
+
+<p>另外一点，实际上此次退出使用了两次<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>，因为<code class="highlighter-rouge">Pool(3)</code>规定了一次装载3个子进程，而我们的任务有6个。所以当第一次使用<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>时实际上只是退出了3个子进程，第二次再退出3个后再退出父进程。那么当任务数远大于我们分配的子进程数时，这个方案就是不可行的。</p>
+
+<h4 id="x01-">0x01 可行方案</h4>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">...</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">r_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+        <span class="n">r_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">handler</span><span class="p">))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">r_list</span><span class="p">:</span>
+            <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">'[-] main exit'</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+<span class="o">...</span>
+</code></pre>
+</div>
+
+<p>执行结果如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">main</span> <span class="nb">exit</span>
+</code></pre>
+</div>
+
+<p>当按下<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>时，当前<code class="highlighter-rouge">Pool</code>中的任务退出，相应的<code class="highlighter-rouge">r.get()</code>得到返回，使<code class="highlighter-rouge">r.get()</code>不再阻塞父进程，从而父进程得以处理之前得到的信号，程序退出。</p>
+
+<p>由于<code class="highlighter-rouge">r.get()</code>对应的是任务，所以只要有一个任务结束父进程就可处理退出信号，所以不存在第一个方案的缺陷。</p>
+
+<h3 id="threading">threading</h3>
+<p>多线程在I/O密集型的任务中仍有很重要的地位，其利用如下方式实现<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>退出：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">thread_num</span><span class="p">):</span>
+    <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">thread_handler</span><span class="p">)</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="k">while</span> <span class="n">threading</span><span class="o">.</span><span class="n">activeCount</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="nb">exit</span><span class="p">(</span><span class="s">'User aborted'</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">thread.deamon = True</code>将所有子线程设置成守护线程。根据Python守护线程的规定，当所有非守护线程退出的时候所有守护线程自动退出。所以当主线程（非守护线程）也就是我们的进程处理<code class="highlighter-rouge">SIGINT</code>信号并退出后，所有子线程也就都退出了。至于<code class="highlighter-rouge">while</code>循环则是为了保证主线程在正常情况下不退出，以免影响子线程的执行。</p>
+
+<h3 id="gevent">gevent</h3>
+<p>协程也是一种很常用的并发模型，在Python中使用gevent来实现协程，并与multiprocessing联合来充分利用多核。使用<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>退出协程的代码如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">gevent</span>
+<span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span><span class="p">;</span> <span class="n">monkey</span><span class="o">.</span><span class="n">patch_socket</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">gevent</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+        <span class="n">gevent</span><span class="o">.</span><span class="n">joinall</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="nb">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">'[-] main exit'</span>
+
+<span class="k">def</span> <span class="nf">handler</span><span class="p">():</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>运行结果如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">CTraceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+  <span class="n">File</span> <span class="s">"/home/.../python2.7/site-packages/gevent/greenlet.py"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">327</span><span class="p">,</span> <span class="ow">in</span> <span class="n">run</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+  <span class="n">File</span> <span class="s">"gv_kbi.py"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">17</span><span class="p">,</span> <span class="ow">in</span> <span class="n">handler</span>
+    <span class="k">pass</span>
+<span class="nb">KeyboardInterrupt</span>
+<span class="o">&lt;</span><span class="n">Greenlet</span> <span class="n">at</span> <span class="mh">0x7f478de72a50</span><span class="p">:</span> <span class="n">handler</span><span class="o">&gt;</span> <span class="n">failed</span> <span class="k">with</span> <span class="nb">KeyboardInterrupt</span>
+
+<span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">main</span> <span class="nb">exit</span>
+</code></pre>
+</div>
+
+<p>我们并没有在greenlet中处理异常，因为在greenlet中处理异常相当于加快了greenlet的结束，使gevent切换到另一个greenlet，并没有终止程序的运行。所以使greenlet中的异常向上抛出，在主程序中捕获并处理异常使程序退出。</p>
+
+
+    </div>
+
+    <div id="disqus_thread"></div>
+    <script>
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+
+    s.src = '//imp0wd3r.disqus.com/embed.js';
+
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+  </div>
+</body>
+</html>
