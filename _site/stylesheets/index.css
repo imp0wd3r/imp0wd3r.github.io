@@ -5,6 +5,16 @@
 ul {
   list-style: none;
 }
+a {
+  text-decoration: none;
+  color: black;
+}
+.wrapper {
+  margin-top: 2em;
+}
+.header small {
+  color: gray;
+}
 .pagination a {
   color: black;
   text-decoration: underline;
@@ -21,9 +31,13 @@ ul {
   color: gray;
   font-size: 13px;
 }
+.post-container .post-list li {
+  margin-bottom: 0;
+}
 .post-container .post-list a {
   color: black;
 }
 .post-container .post-list a:hover {
   opacity: 0.8;
 }
+

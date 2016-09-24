@@ -1,25 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Python并发编程中的KeyboardInterrupt</title>
+  <meta name="description" content="Info 使用脚本程序时我们时常会用到&amp;lt;Ctrl-c&amp;gt;触发KeyboardInterrupt来进行退出，本文记录了在几种典型并发模型中实现此类退出的方式。">
 
-  <link rel="stylesheet" href="/stylesheets/post.css">
-  <link rel="stylesheet" href="/stylesheets/default.css">
+  
+  
+  <link rel="stylesheet" href="/stylesheets/main.css">
+  <link rel="stylesheet" href="/stylesheets/fix.css">
+  <link rel="canonical" href="http://p0wd3r.cc/2016/04/15/python-keyboardinterrupt.html">
+  <link rel="alternate" type="application/rss+xml" title="p0wd3r.cc" href="http://p0wd3r.cc/feed.xml">
+
+  
 </head>
-<body>
-  <div class="container">
-
-    <div class="post-title">
-  <h1>Python并发编程中的KeyboardInterrupt</h1>
-  <p>15 Apr 2016</p>
-</div>
 
 
-    <a href="/"><img src="/images/scribble2.png" alt=""></a>
-    <div class="post-content">
-      <h2 id="info">Info</h2>
+  <body>
+
+    <header class="site-header" role="banner">
+
+  <div class="wrapper">
+
+    
+    <a class="site-title" href="http://p0wd3r.cc/">p0wd3r.cc</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15" width="18px" height="15px">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        <a class="page-link" href="/about/">About</a>
+        <a class="page-link" href="/feed/">RSS</a>
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Python并发编程中的KeyboardInterrupt</h1>
+    <p class="post-meta"><time datetime="2016-04-15T00:00:00+08:00" itemprop="datePublished">Apr 15, 2016</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <h2 id="info">Info</h2>
 <p>使用脚本程序时我们时常会用到<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>触发<code class="highlighter-rouge">KeyboardInterrupt</code>来进行退出，本文记录了在几种典型并发模型中实现此类退出的方式。</p>
 
 <h3 id="section">基础知识</h3>
@@ -42,7 +82,7 @@
 
 <h4 id="x00-">0x00 缺陷方案</h4>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
 
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
@@ -72,7 +112,7 @@
 
 <p>运行结果如下：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
 <span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
 <span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
 <span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
@@ -88,7 +128,7 @@
 
 <h4 id="x01-">0x01 可行方案</h4>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">...</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="o">...</span>
 <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
     <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
     <span class="n">r_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -108,7 +148,7 @@
 
 <p>执行结果如下：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
 <span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
 <span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">handler</span> <span class="nb">exit</span>
 <span class="p">[</span><span class="o">-</span><span class="p">]</span> <span class="n">main</span> <span class="nb">exit</span>
@@ -122,7 +162,7 @@
 <h3 id="threading">threading</h3>
 <p>多线程在I/O密集型的任务中仍有很重要的地位，其利用如下方式实现<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>退出：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">thread_num</span><span class="p">):</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">thread_num</span><span class="p">):</span>
     <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">thread_handler</span><span class="p">)</span>
     <span class="n">thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
     <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
@@ -139,7 +179,7 @@
 <h3 id="gevent">gevent</h3>
 <p>协程也是一种很常用的并发模型，在Python中使用gevent来实现协程，并与multiprocessing联合来充分利用多核。使用<code class="highlighter-rouge">&lt;Ctrl-c&gt;</code>退出协程的代码如下：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">gevent</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">gevent</span>
 <span class="kn">from</span> <span class="nn">gevent</span> <span class="kn">import</span> <span class="n">monkey</span><span class="p">;</span> <span class="n">monkey</span><span class="o">.</span><span class="n">patch_socket</span><span class="p">()</span>
 
 
@@ -162,7 +202,7 @@
 
 <p>运行结果如下：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">CTraceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="o">^</span><span class="n">CTraceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
   <span class="n">File</span> <span class="s">"/home/.../python2.7/site-packages/gevent/greenlet.py"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">327</span><span class="p">,</span> <span class="ow">in</span> <span class="n">run</span>
     <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
   <span class="n">File</span> <span class="s">"gv_kbi.py"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">17</span><span class="p">,</span> <span class="ow">in</span> <span class="n">handler</span>
@@ -177,21 +217,33 @@
 <p>我们并没有在greenlet中处理异常，因为在greenlet中处理异常相当于加快了greenlet的结束，使gevent切换到另一个greenlet，并没有终止程序的运行。所以使greenlet中的异常向上抛出，在主程序中捕获并处理异常使程序退出。</p>
 
 
+  </div>
+
+  
+    
+
+  
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p>&quot;The quieter you become, the more you are able to hear.&quot;
+</p>
+      </div>
     </div>
 
-    <div id="disqus_thread"></div>
-    <script>
-    (function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-
-    s.src = '//imp0wd3r.disqus.com/embed.js';
-
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-    })();
-    </script>
-    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
-
   </div>
-</body>
+
+</footer>
+
+
+  </body>
+
 </html>
